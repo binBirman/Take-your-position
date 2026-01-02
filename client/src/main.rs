@@ -16,6 +16,7 @@ enum NetMessage {
 async fn main() {
     let stream = TcpStream::connect("127.0.0.1:9000").await.unwrap();
     println!("Connected to server");
+    let mut my_id: Option<usize> = None;
 
     let (r, mut w) = stream.into_split();
     let mut reader = BufReader::new(r).lines();
@@ -24,7 +25,9 @@ async fn main() {
         let msg: NetMessage = serde_json::from_str(&line).unwrap();
 
         match msg {
+            //
             NetMessage::Event(Event::PlayerAssigned { player_id }) => {
+                my_id = Some(player_id);
                 println!("You are player {}", player_id);
             }
 

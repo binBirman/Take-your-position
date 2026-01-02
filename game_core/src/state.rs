@@ -1,34 +1,41 @@
 use crate::Rank;
 use crate::Suit;
 use crate::card::Card;
-use crate::command::Event;
+use crate::command::Command;
+use crate::event::Event;
 use rand::rng;
 use rand::seq::SliceRandom;
 
 #[derive(Debug, Clone)]
 pub struct PlayerState {
-    pub id: usize,
-    pub hand: Vec<Card>,
-    pub score: i32,
-    pub prediction: Option<usize>,
+    pub id: usize,                                // 玩家 ID
+    pub is_first: bool,                           // 是否为首位玩家
+    pub hand: Vec<Card>,                          // 玩家手牌
+    pub score: i32,                               // 玩家分数
+    pub prediction: Option<usize>,                // 先验预测,记录自己的排名,不记录为none
+    pub has_predicted: bool,                      // 是否已经做出预测
+    pub has_played: bool,                         // 是否已经出牌
+    pub posterior_prediction: Option<Vec<usize>>, // 后验预测,按从预测排名高到低顺序记录玩家 ID,不记录为none
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
-    Prediction,
-    Play,
-    End,
+    //Prediction, // 预测
+    PriorPrediction,     // 先验预测
+    Play,                // 出牌
+    PosteriorPrediction, // 后验预测
+    End,                 // 结束
 }
 
 #[derive(Debug)]
 pub struct GameState {
-    pub players: Vec<PlayerState>,
-    pub round: u8,
-    pub start_player: usize,
-    pub phase: Phase,
-
-    // 本轮暂存
-    pub table: Vec<(usize, Card)>,
+    pub players: Vec<PlayerState>, // 玩家状态列表
+    pub round: u8,                 // 当前轮数
+    pub start_player: usize,       // 本轮起始玩家 ID
+    pub phase: Phase,              // 当前阶段
+    pub current_player: usize,     // 当前行动玩家 ID
+    pub table: Vec<(usize, Card)>, // 本轮牌桌上的牌（玩家 ID，牌）
+    pub is_card: bool,             // 是否发牌
 }
 
 impl GameState {
