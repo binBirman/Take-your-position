@@ -6,7 +6,8 @@ use tokio::{
     net::TcpStream,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
 enum NetMessage {
     Command(Command),
     Event(Event),
@@ -22,13 +23,33 @@ async fn main() {
     let mut reader = BufReader::new(r).lines();
 
     while let Ok(Some(line)) = reader.next_line().await {
-        let msg: NetMessage = serde_json::from_str(&line).unwrap();
+        // Debug: Print the received JSON line
+        println!("Received JSON: {}", line);
 
+        // Attempt to parse the JSON
+        let msg: NetMessage = match serde_json::from_str(&line) {
+            Ok(parsed_msg) => parsed_msg,
+            Err(e) => {
+                println!("Failed to parse message: {}", e);
+                continue;
+            }
+        };
+
+        // 处理服务器发出的event消息
         match msg {
             //
             NetMessage::Event(Event::PlayerAssigned { player_id }) => {
                 my_id = Some(player_id);
                 println!("You are player {}", player_id);
+            }
+
+            NetMessage::Event(Event::CardsDealt { player_id, cards }) => {
+                if Some(player_id) == my_id {
+                    println!("Your cards:");
+                    for card in cards {
+                        println!("{}", card.to_string());
+                    }
+                }
             }
 
             NetMessage::Event(e) => {
@@ -40,28 +61,4 @@ async fn main() {
             }
         }
     }
-
-    // 示例：直接发一个预测（真实版本你从 stdin 读）
-    // let cmd = NetMessage::Command(Command::Predict {
-    //     player_id: 0,
-    //     rank: Some(1),
-    // });
-
-    // w.write_all((serde_json::to_string(&cmd).unwrap() + "\n").as_bytes())
-    //     .await
-    //     .unwrap();
-
-    //游戏大循环
-    //决定顺序
-    //发牌
-
-    //游戏内循环
-    //先验预测
-    //出牌
-    //计算排名，不公布
-    //后验预测
-    //计算分数，公布（包括排名）
-
-    //计算总分
-    //下一轮投票
 }
